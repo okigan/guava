@@ -215,6 +215,25 @@ public abstract class AbstractService implements Service {
 
     return shutdown;
   }
+  
+    public final void reset() {
+        lock.lock();
+        try {
+            switch (snapshot.state) {
+                case TERMINATED:
+                case FAILED:
+                    snapshot = new StateSnapshot(State.NEW);
+                    break;
+                default:
+                    throw new AssertionError("Unexpected state: " + snapshot.state);
+            }
+        } catch (Throwable resetFailure) {
+            notifyFailed(resetFailure);
+        } finally {
+            lock.unlock();
+            executeListeners();
+        }
+    }  
 
   @Override
   public State startAndWait() {
